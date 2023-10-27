@@ -1,38 +1,48 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
+import pandas as pd
 
-"""
-# Welcome to Streamlit!
+# Create a Streamlit app
+st.title("CSV Explorer Web App")
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+# Sidebar - CSV File Upload
+uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+if uploaded_file is not None:
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(uploaded_file)
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+    # Create tabs for different sections
+    tabs = st.selectbox("Select a Tab:", ["Overall Info", "DataFrame"])
 
+    if tabs == "Overall Info":
+        # Display overall dataset information
+        st.write("## Overall Information")
+        st.write(f"Number of Rows: {df.shape[0]}")
+        st.write(f"Number of Columns: {df.shape[1]}")
+        st.write(f"Number of Duplicated Rows: {df.duplicated().sum()}")
+        st.write(f"Number of Rows with Missing Values: {df.isnull().any(axis=1).sum()}")
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+    elif tabs == "DataFrame":
+        # Display DataFrame tab
+        st.write("## DataFrame")
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+        # Display the list of columns, data types, and memory usage
+        col_info = pd.DataFrame({
+            "Column Name": df.columns,
+            "Data Type": df.dtypes,
+            "Memory Usage": df.memory_usage() / 1024,  # Convert to kilobytes
+        })
+        st.write("### Column Information")
+        st.write(col_info)
 
-    points_per_turn = total_points / num_turns
-
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
-
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+        # Interactive options for exploring the dataset
+        st.write("### Explore the Dataset")
+        num_rows_to_display = st.slider("Select the number of rows to display (5 to 50)", 5, 50)
+        display_logic = st.radio("Select how to display rows:", ["Head", "Tail", "Sample"])
+        
+        if display_logic == "Head":
+            st.write(df.head(num_rows_to_display))
+        elif display_logic == "Tail":
+            st.write(df.tail(num_rows_to_display))
+        elif display_logic == "Sample":
+            st.write(df.sample(num_rows_to_display))
